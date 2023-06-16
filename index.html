@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/addons/p5.sound.js"></script>
+    <style>
+      body {
+        display: flex;
+        height: 200vh;
+        cursor: url('style/pause-play.png'), auto; /*cursor styling*/
+      }
+      svg {
+        z-index: 2;
+        position: fixed;
+        height: fit-content;
+        top: 100px;
+        left: 50px;
+      }
+      #video {
+        margin: 50px;
+        width:fit-content;
+        z-index: -1;
+      }
+      .text {
+        margin: 50px;
+        font-size: 2vw;
+        line-height: 5vh;;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="video"></div>
+    <div>
+      <div class="text">While living in Amsterdam for the past couple of years 
+        Ross Curry created a series of music and video clips.<br>
+        The music was mostly created as an experiment around music theory, 
+        whereas the videos give a glimpse into his personal life.<br>
+      </div>
+        <div class="text">Big shout out to the <mark>The Beat Makers Union</mark>
+        based in Rotterdam. Join their <a href="https://discord.gg/kd3nBWcXUS">Discord channel</a> to participate in future creative sessions.</div>
+    </div>
+    
+    <svg id="projectTitles" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 3000 1000" preserveAspectRatio="none">
+      <path id="MyPath" d="M51.4972 0.998047C-235 605.5 733.497 1042 1878.5 739.497" style="fill: none;"/>
+      <text>
+          <textPath id="textPath" href="#MyPath" text-anchor="start" startOffset="100" style="font-size: 5vw; transition: .1s all ease;">
+              Ross Curry makes music
+          </textPath>
+      </text>
+  </svg>
+
+
+    <script>
+      let w = 700
+      let h = 400
+      let vid
+      //preload the sound
+      let sound;
+      function preload() {
+        sound =loadSound('Ross.mp3');
+    }
+      //load the video
+      function setup() {
+        let sketch =createCanvas(w, h)
+        sketch.parent('#video') //place the sketch within the div
+        vid = createVideo('IMG_8618.MOV', vidLOAD)
+        vid.size(w, h)
+        //create fft in order to analise the sound
+        fft = new p5.FFT();
+        fft.setInput(sound);
+      }
+      function vidLOAD() {
+        vid.loop()
+        vid.volume(0)
+      }
+
+      function draw() {
+        vid.hide() // hide the original video
+        let imgIn = vid.get()
+        let imgOut = createGraphics(w, h) //create a new canvas on top of the original canvas
+        //analysing the sound
+        fft.analyze();
+        let bass = fft.getEnergy('bass');
+        let lowMid = fft.getEnergy('lowMid');
+        let mid = fft.getEnergy('mid');
+        let high = fft.getEnergy('highMid');
+        let treble = fft.getEnergy('treble');
+
+        let _size = map(high, 0, 255, 10, 20); 
+
+        imgIn.resize(round(imgIn.width / _size), round(imgIn.height / _size)) //resize the image to minimise the number of pixels
+        imgIn.loadPixels() //access pixel information
+
+        //it creates an array in which each four positions correspond to one pixel [R, G, B, a]
+        for (let y = 0; y < imgIn.height; y++) {
+          for (let x = 0; x < imgIn.width; x++) {
+            index = (x + y * imgIn.width) * 4
+
+            imgOut.fill(
+              imgIn.pixels[index],
+              imgIn.pixels[index + 1],
+              imgIn.pixels[index + 2]
+            ) //pixels' colour
+            imgOut.noStroke()
+
+            let posX = (x + 0.5) * _size
+            let posY = (y + 0.5) * _size
+            let d = map(treble, 0, 255, 0, 50);
+            imgOut.circle(posX, posY, d)
+          }
+        }
+        image(imgOut, 0, 0) //place the resulting image
+
+      }
+      
+    
+    document.addEventListener("click", togglePlay); //on/off function
+
+    function togglePlay() {
+      if (sound.isPlaying()) {
+      sound.pause();
+      vid.pause();
+      
+      
+       } else {
+       sound.loop();
+       vid.loop();
+       
+       }
+     }
+   
+    </script>
+    <script>
+
+      var doc = document.documentElement;
+      var textPath = document.querySelector('#textPath');
+      var path = document.getElementById("MyPath");
+
+      var loadText = document.querySelector('#loadText');
+
+
+      function updateTextPathOffset(offset){
+          textPath.setAttribute('startOffset', offset)
+      }
+
+      function onScroll(){
+          requestAnimationFrame(function(){
+              updateTextPathOffset(((path.getTotalLength() * window.scrollY)/doc.scrollHeight)*0.99)
+          })
+      }
+
+      window.addEventListener('scroll', onScroll);
+
+  </script>
+  </body>
+</html>
